@@ -209,7 +209,8 @@ body {
   filter: blur(20px);
 }
 
-body.moving #cursor-flashlight {
+body.moving #cursor-flashlight,
+body.flashlight-active #cursor-flashlight {
   opacity: 1;
   animation: none;
 }
@@ -233,6 +234,11 @@ body.over-moving #cursor-flashlight {
   height: calc(var(--flashlight-size) * 0.35) !important;
   opacity: 0.2 !important;
   transition: width 2.5s var(--ease-out), height 2.5s var(--ease-out), opacity 2.5s ease;
+}
+
+body.recognized #cursor-flashlight {
+  opacity: 0 !important;
+  pointer-events: none;
 }
 
 @keyframes breathe {
@@ -284,6 +290,34 @@ body.over-moving #haste-warning {
   50% {
     opacity: 0.75;
   }
+}
+
+/* STAY CALM Warning */
+#stay-calm {
+  position: fixed;
+  top: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-sans);
+  font-size: clamp(0.65rem, 1.4vw, 0.8rem);
+  font-weight: 500;
+  letter-spacing: 0.4em;
+  text-align: center;
+  color: rgba(240, 240, 240, 0.65);
+  z-index: 1001;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1s ease;
+  text-transform: uppercase;
+  line-height: 1.8;
+}
+
+body.interacting #stay-calm {
+  opacity: 1;
+}
+
+body.recognized #stay-calm {
+  opacity: 0 !important;
 }
 
 /* CLI hint underscore */

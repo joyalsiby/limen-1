@@ -51,7 +51,9 @@ document.addEventListener( 'DOMContentLoaded', () => {
     appReady: false,
     lastActivity: Date.now(),
     lastStillnessTime: 0,
-    purged: false
+    purged: false,
+    recognized: false,
+    interacting: false
   };
 
   // ─────────────────────────────────────────
@@ -350,6 +352,7 @@ document.addEventListener( 'DOMContentLoaded', () => {
     if ( !waitingForEntry ) return;
     waitingForEntry = false;
     preloader.classList.add( 'fade-out' );
+    document.body.classList.add( 'flashlight-active' );
     setTimeout( () => {
       GameState.appReady = true;
     }, 2000 );
@@ -420,8 +423,12 @@ document.addEventListener( 'DOMContentLoaded', () => {
     }
 
     clearTimeout( moveTimeout );
-    clearTimeout( stillnessTimeout );
     document.body.classList.remove( 'ultra-still' );
+
+    // If they interact (move) before recognition, show "Stay Calm"
+    if ( GameState.appReady && !GameState.recognized ) {
+      handleInteraction();
+    }
 
     moveTimeout = setTimeout( () => {
       document.body.classList.remove( 'moving', 'over-moving' );
@@ -430,21 +437,27 @@ document.addEventListener( 'DOMContentLoaded', () => {
       moveStartTime = null;
       moveDuration = 0;
     }, 800 );
-
-    stillnessTimeout = setTimeout( () => {
-      if ( !isMoving && !GameState.coreUnlocked ) {
-        document.body.classList.add( 'ultra-still' );
-      }
-    }, 3000 );
   } );
+
+  function handleInteraction() {
+    if ( GameState.recognized || !GameState.appReady ) return;
+    document.body.classList.add( 'interacting' );
+    clearTimeout( GameState.interactionTimeout );
+    GameState.interactionTimeout = setTimeout( () => {
+      document.body.classList.remove( 'interacting' );
+    }, 1500 );
+  }
 
   // ─────────────────────────────────────────
   // CHAPTER 02: CLI TRIGGER
   // ─────────────────────────────────────────
   document.addEventListener( 'keydown', ( e ) => {
     if ( GameState.purged ) return;
-    // Stamp activity on any keypress (interval will remove ultra-still on next tick)
+    // Stamp activity on any keypress
     GameState.lastActivity = Date.now();
+    if ( GameState.appReady && !GameState.recognized ) {
+      handleInteraction();
+    }
     // If CLI is open but lost focus, Enter snaps focus back
     if ( e.key === 'Enter' && cliContainer.classList.contains( 'active' ) && document.activeElement !== cliInput ) {
       e.preventDefault();
@@ -482,6 +495,9 @@ document.addEventListener( 'DOMContentLoaded', () => {
     document.addEventListener( evt, () => {
       GameState.lastActivity = Date.now();
       GameState.idleTime = 0;
+      if ( GameState.appReady && !GameState.recognized ) {
+        handleInteraction();
+      }
     } );
   } );
 
@@ -558,12 +574,9 @@ document.addEventListener( 'DOMContentLoaded', () => {
         break;
 
       case 'core':
-        const recentlyStill = ( Date.now() - GameState.lastStillnessTime ) < 10000;
-        if ( document.body.classList.contains( 'ultra-still' ) || recentlyStill ) {
+        if ( GameState.recognized ) {
           GameState.coreUnlocked = true;
           GameState.chapter = 2;
-          // Dismiss the reward overlay immediately
-          document.body.classList.remove( 'ultra-still' );
           cliTrust.textContent = 'TRUST: VERIFIED';
           cliTrust.classList.add( 'trusted' );
           unlockSite();
@@ -691,7 +704,6 @@ document.addEventListener( 'DOMContentLoaded', () => {
         response = `ERR: '${cmd}' NOT RECOGNIZED.\nTYPE [help] FOR AVAILABLE COMMANDS.`;
     }
 
-    log( `SYSTEM_RESPONSE: ${response.replace( /\n/g, ' | ' ).substring( 0, 120 )}` );
     printLine( `> ${cmd}`, 'rgba(245,245,245,0.25)' );
     printResponse( response, isSystem ? 'rgba(245,245,245,0.85)' : 'rgba(245,245,245,0.7)' );
   }
@@ -745,7 +757,6 @@ document.addEventListener( 'DOMContentLoaded', () => {
   // CHAPTER 04B: PURGE SEQUENCE
   // ─────────────────────────────────────────
   function executePurge() {
-    log( 'MILESTONE: PURGE_EXECUTING' );
     const chapters = [ ...document.querySelectorAll( '.chapter' ) ].reverse();
     purgeOverlay.classList.remove( 'hidden' );
     setTimeout( () => purgeOverlay.classList.add( 'active' ), 50 );
@@ -791,16 +802,16 @@ document.addEventListener( 'DOMContentLoaded', () => {
     if ( GameState.purged ) return;
 
     // Inactivity-based stillness: works even inside terminal
-    // Triggers after 3s of no mouse OR keyboard activity
-    if ( !GameState.coreUnlocked && GameState.appReady ) {
-      const inactive = ( Date.now() - GameState.lastActivity ) > 3000;
+    // Triggers after 5s of no mouse OR keyboard activity
+    if ( !GameState.coreUnlocked && GameState.appReady && !GameState.recognized ) {
+      const inactive = ( Date.now() - GameState.lastActivity ) > 5000;
       if ( inactive ) {
-        if ( !document.body.classList.contains( 'ultra-still' ) ) {
-          document.body.classList.add( 'ultra-still' );
+        if ( !GameState.recognized ) {
+          GameState.recognized = true;
+          GameState.lastStillnessTime = Date.now();
+          document.body.classList.remove( 'flashlight-active' );
+          document.body.classList.add( 'recognized', 'ultra-still' );
         }
-        GameState.lastStillnessTime = Date.now();
-      } else {
-        document.body.classList.remove( 'ultra-still' );
       }
     }
 

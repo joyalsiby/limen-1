@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://limen1.joyalsiby.com/sitemap.xml
