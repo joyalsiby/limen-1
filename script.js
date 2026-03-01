@@ -492,11 +492,16 @@ document.addEventListener( 'DOMContentLoaded', () => {
 
   // Robust activity tracking
   [ 'scroll', 'click', 'mousedown', 'touchstart' ].forEach( evt => {
-    document.addEventListener( evt, () => {
+    document.addEventListener( evt, ( e ) => {
       GameState.lastActivity = Date.now();
       GameState.idleTime = 0;
       if ( GameState.appReady && !GameState.recognized ) {
         handleInteraction();
+      }
+      if ( ( evt === 'mousedown' || evt === 'touchstart' ) && cliContainer.classList.contains( 'active' ) ) {
+        if ( !cliContainer.contains( e.target ) ) {
+          cliContainer.classList.remove( 'active' );
+        }
       }
     } );
   } );

@@ -711,11 +711,13 @@ body.ephemeral-fade .chapter.visible .reveal-text {
   transform: translateY(16px);
   transition: opacity 1s var(--ease-out), transform 1s var(--ease-out);
   overflow: hidden;
+  pointer-events: none;
 }
 
 #cli-container.active {
   opacity: 1;
   transform: translateY(0);
+  pointer-events: auto;
 }
 
 /* CRT Header Bar */
